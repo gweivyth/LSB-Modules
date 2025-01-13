@@ -7,16 +7,15 @@ require('scripts/globals/utils')
 -----------------------------------
 local m = Module:new('mission_wardrobe_unlocks')
 
-local unlocks =
-{
-    [xi.mission.log_id.ZILART] =
-    {
+-- Mission unlock details
+local unlocks = {
+    [xi.mission.log_id.ZILART] = {
         [xi.mission.id.zilart.ARK_ANGELS] = { xi.inv.WARDROBE3, 5 },
     },
 }
 
-local bagNames =
-{
+-- Mapping of inventory slots to names
+local bagNames = {
     [xi.inv.INVENTORY]  = 'Inventory',
     [xi.inv.MOGSAFE]    = 'Mog Safe',
     [xi.inv.STORAGE]    = 'Storage',
@@ -37,39 +36,35 @@ local bagNames =
     [xi.inv.RECYCLEBIN] = 'Recycle Bin',
 }
 
+-- Change wardrobe sizes upon character creation
 m:addOverride('xi.player.charCreate', function(player)
     super(player)
-
-    -- NOTE: These will all be clamped between 0-80,
-    --     : so using -80 is fine
-    player:changeContainerSize(xi.inv.WARDROBE,  -80)
-    player:changeContainerSize(xi.inv.WARDROBE2, -80)
-    player:changeContainerSize(xi.inv.WARDROBE3, -80)
-    player:changeContainerSize(xi.inv.WARDROBE4, -80)
-    player:changeContainerSize(xi.inv.WARDROBE5, -80)
-    player:changeContainerSize(xi.inv.WARDROBE6, -80)
-    player:changeContainerSize(xi.inv.WARDROBE7, -80)
-    player:changeContainerSize(xi.inv.WARDROBE8, -80)
+    
+    -- Apply size change for all wardrobes
+    for i = xi.inv.WARDROBE, xi.inv.WARDROBE8 do
+        player:changeContainerSize(i, -80)
+    end
 end)
 
+-- Handle mission completion to unlock wardrobe slots
 m:addOverride('npcUtil.completeMission', function(player, logId, missionId, params)
     local result = super(player, logId, missionId, params)
 
+    -- Check if the mission unlocks a wardrobe slot
     if result and unlocks[logId] and unlocks[logId][missionId] then
         local unlock = unlocks[logId][missionId]
-        local bag = unlock[1]
+        local bag, bagIncrease = unlock[1], unlock[2]
         local bagName = bagNames[bag]
-        local bagIncrease = unlock[2]
 
         local oldSize = player:getContainerSize(bag)
         player:changeContainerSize(bag, bagIncrease)
         local newSize = player:getContainerSize(bag)
 
-        local str = string.format(
+        -- Print the update message
+        local message = string.format(
             '%s capacity has been increased by %i from %i to %i',
             bagName, bagIncrease, oldSize, newSize)
-
-        player:printToPlayer(str, xi.msg.channel.SYSTEM_3, '')
+        player:printToPlayer(message, xi.msg.channel.SYSTEM_3, '')
     end
 
     return result
